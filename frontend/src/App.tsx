@@ -10,6 +10,36 @@ function App() {
     additionalInfo: '',
     categories: []
   })
+  // Jira story fetch state
+  const [storyId, setStoryId] = useState<string>('')
+  const [isFetchingStory, setIsFetchingStory] = useState<boolean>(false)
+
+  const fetchJiraStory = async (id: string) => {
+    if (!id || !id.trim()) return
+    try {
+      setIsFetchingStory(true)
+      
+      const res = await fetch(`/api/jira/story?issueId=${encodeURIComponent(id)}`)
+      if (!res.ok) {
+        const text = await res.text().catch(() => '')
+        throw new Error(text || `Failed to fetch story: ${res.status}`)
+      }
+      const data = await res.json()
+      // Expected payload: { title?, description?, acceptanceCriteria?, additionalInfo? }
+      setFormData(prev => ({
+        ...prev,
+        storyTitle: data.title ?? prev.storyTitle,
+        // Map Jira description into Acceptance Criteria per requirement
+        acceptanceCriteria: data.description ?? prev.acceptanceCriteria,
+        additionalInfo: data.additionalInfo ?? prev.additionalInfo
+      }))
+    } catch (err) {
+      // Do not display any fetched message; keep behavior unchanged otherwise
+      console.error('Failed to fetch Jira story:', err)
+    } finally {
+      setIsFetchingStory(false)
+    }
+  }
   const [results, setResults] = useState<GenerateResponse | null>(null)
   const [isLoading, setIsLoading] = useState<boolean>(false)
   const [error, setError] = useState<string | null>(null)
@@ -380,6 +410,28 @@ function App() {
         <div className="header">
           <h1 className="title">User Story to Tests</h1>
           <p className="subtitle">Generate comprehensive test cases from your user stories</p>
+        </div>
+        {/* Jira Story ID input + button */}
+        <div style={{marginBottom: 16, display: 'flex', gap: 12, alignItems: 'center'}}>
+          <label htmlFor="storyId" style={{fontWeight: 600, color: '#2c3e50'}}>Story ID</label>
+          <input
+            id="storyId"
+            type="text"
+            value={storyId}
+            onChange={(e) => setStoryId(e.target.value)}
+            placeholder="e.g. PROJ-123"
+            style={{padding: 8, borderRadius: 6, border: '1px solid #e1e8ed', minWidth: 160}}
+          />
+          <button
+            type="button"
+            className="submit-btn"
+            onClick={() => fetchJiraStory(storyId)}
+            disabled={!storyId.trim() || isFetchingStory}
+            style={{padding: '8px 14px', fontSize: 14}}
+          >
+            {isFetchingStory ? 'Fetching...' : 'Get Story detail'}
+          </button>
+          
         </div>
         
         <form onSubmit={handleSubmit} className="form-container">

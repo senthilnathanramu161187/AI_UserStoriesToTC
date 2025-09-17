@@ -3,6 +3,7 @@ import cors from 'cors'
 import dotenv from 'dotenv'
 import path from 'path'
 import { generateRouter } from './routes/generate'
+import { jiraRouter } from './routes/jira'
 
 // Load environment variables from root directory
 const envPath = path.join(__dirname, '../../.env')
@@ -21,8 +22,25 @@ const app = express()
 const PORT = process.env.PORT || 8080
 
 // Middleware
+// Allow the incoming request origin dynamically so Vite dev server
+// origins (e.g. http://localhost:5173 or http://localhost:5174) are accepted.
+// If `CORS_ORIGIN` is explicitly set, prefer that as a single allowed origin.
 app.use(cors({
-  origin: process.env.CORS_ORIGIN || 'http://localhost:5173',
+  origin: (origin, callback) => {
+    const envOrigin = process.env.CORS_ORIGIN
+    if (envOrigin) return callback(null, envOrigin)
+    // When origin is undefined (e.g., server-to-server or same-origin), allow it.
+    if (!origin) return callback(null, true)
+    try {
+      const url = new URL(origin)
+      // Allow localhost with any port (useful for Vite dev server variations)
+      if (url.hostname === 'localhost') return callback(null, true)
+    } catch (err) {
+      // If parsing fails, do not allow by default
+    }
+    // Fallback to not allowing the origin
+    return callback(new Error('Not allowed by CORS'))
+  },
   credentials: true
 }))
 app.use(express.json({ limit: '10mb' }))
@@ -35,6 +53,7 @@ app.get('/api/health', (req, res) => {
 
 // API routes
 app.use('/api/generate-tests', generateRouter)
+app.use('/api/jira', jiraRouter)
 
 // Error handling middleware
 app.use((err: Error, req: express.Request, res: express.Response, next: express.NextFunction) => {
