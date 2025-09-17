@@ -17,8 +17,8 @@ jiraRouter.get('/story', async (req: express.Request, res: express.Response) => 
       return
     }
 
-    const jiraUser = process.env.JIRA_USER || 'user email'
-    const jiraApiKey = process.env.JIRA_API_KEY || 'jira api key'
+    const jiraUser = process.env.JIRA_USER || 'userid'
+    const jiraApiKey = process.env.JIRA_API_KEY || 'apikey'
     const baseUrl = process.env.JIRA_BASE || 'https://my-manual-test-demo-sn.atlassian.net'
 
     const endpoint = `${baseUrl}/rest/api/2/issue/${encodeURIComponent(issueId)}`

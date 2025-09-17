@@ -64,3 +64,21 @@ ${additionalInfo}
 
   return userPrompt
 }
+
+export function buildTestDataPrompt(testCase: { id: string; title: string; steps: string[]; testData?: string; expectedResult: string; category: string }, count: number = 5): string {
+  const stepsText = (testCase.steps || []).map((s, i) => `${i + 1}. ${s}`).join('\n')
+  return `You are a Test Data Manager.
+Given the following test case, generate up to ${count} rows of test data that include both valid and invalid inputs.
+Ensure the data covers positive (valid), negative (invalid), and edge cases.
+Keep the data simple, realistic, and easy to understand.
+Present the output in a table format with the following columns separated by a tab or pipe:
+Test Data ID | Input Field(s) | Valid/Invalid | Sample Value
+
+Test Case ID: ${testCase.id}
+Title: ${testCase.title}
+Category: ${testCase.category}
+Expected Result: ${testCase.expectedResult}
+Steps:
+${stepsText}
+
+Return only the tabular rows (one per line).` }

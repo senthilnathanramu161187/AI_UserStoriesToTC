@@ -92,4 +92,47 @@ export class GroqClient {
     }
   }
 
+  // generateText: for prompts that return plain text (not JSON), return raw content
+  async generateText(systemPrompt: string, userPrompt: string): Promise<GroqResponse> {
+    const endpoint = `${this.baseUrl}/chat/completions`
+    const requestBody = {
+      model: this.model,
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userPrompt }
+      ],
+      temperature: 0.2
+    }
+
+    try {
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${this.apiKey}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(requestBody)
+      })
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        throw new Error(`Groq API error: ${response.status} ${response.statusText} - ${errorText}`)
+      }
+
+      const data = await response.json() as any
+      const content = data.choices?.[0]?.message?.content
+      if (!content) throw new Error('No content received from Groq API')
+
+      return {
+        content,
+        model: data.model,
+        promptTokens: data.usage?.prompt_tokens || 0,
+        completionTokens: data.usage?.completion_tokens || 0
+      }
+    } catch (error) {
+      console.error('❌ Error calling Groq API (text):', error)
+      throw error
+    }
+  }
+
 }
